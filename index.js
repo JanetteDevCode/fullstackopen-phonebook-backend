@@ -23,6 +23,13 @@ const persons = [{
   }
 ];
 
+app.get('/info', (req, res) => {
+  const timestamp = new Date(Date.now()).toString();
+  let message = `<p>Phonebook has info for ${persons.length} people.</p>`;
+  message += `<p>${timestamp}</p>`;
+  res.send(message);
+});
+
 app.get('/api/persons', (req, res) => {
   res.json(persons);
 });
