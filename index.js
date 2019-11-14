@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
+const morgan = require('morgan');
 const port = process.env.PORT || 3001;
 
 let persons = [{
@@ -55,6 +56,7 @@ const generateId = () => {
 };
 
 app.use(bodyParser.json());
+app.use(morgan('tiny'));
 
 app.get('/info', (req, res) => {
   const timestamp = new Date(Date.now()).toString();
