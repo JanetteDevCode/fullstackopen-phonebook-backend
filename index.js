@@ -24,6 +24,12 @@ let persons = [{
   }
 ];
 
+const personExists = (name) => {
+  return persons.find((person) => {
+    return person.name.toLowerCase() === name.toLowerCase();
+  });
+};
+
 const idExists = (id) => {
   const found = persons.find((person) => {
     return person.id === id;
@@ -86,10 +92,32 @@ app.delete('/api/persons/:id', (req, res) => {
 
 app.post('/api/persons', (req, res) => {
   const body = req.body;
+  
+  if (!body.name || !body.phone) {
+    return res
+      .status(400)
+      .json({error: 'name or number missing'});
+  }
+
+  const name = body.name.trim();
+  const phone = body.phone.trim();
+
+  if (!name || !phone) {
+    return res
+      .status(400)
+      .json({error: 'name and number cannot be blank'});
+  }
+
+  if (personExists(name)) {
+    return res
+      .status(400)
+      .json({error: 'name must be unique'})
+  }
+
   const person = {
     id: generateId(),
-    name: body.name,
-    phone: body.phone
+    name: name,
+    phone: phone
   }
 
   persons = persons.concat(person);
