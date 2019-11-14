@@ -55,8 +55,21 @@ const generateId = () => {
   return id;
 };
 
+morgan.token('data', (req, res) => {
+  return JSON.stringify(req.body);
+});
+
 app.use(bodyParser.json());
-app.use(morgan('tiny'));
+app.use(morgan('tiny', {
+  skip: (req, res) => {
+    return req.method === 'POST';
+  }
+}));
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data', {
+  skip: (req, res) => {
+    return req.method !== 'POST';
+  }
+}));
 
 app.get('/info', (req, res) => {
   const timestamp = new Date(Date.now()).toString();
