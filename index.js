@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
 const port = process.env.PORT || 3001;
 
 let persons = [{
@@ -23,9 +24,36 @@ let persons = [{
   }
 ];
 
+const idExists = (id) => {
+  const found = persons.find((person) => {
+    return person.id === id;
+  });
+
+  if (found) {
+    console.log(`id ${id} is already in use!`);
+  }
+  return found;
+};
+
+const generateId = () => {
+  const minId = 1;
+  const maxId = 10000;
+  let id = 0;
+
+  do {
+    id = Math.floor(Math.random() * (maxId - minId + 1)) + minId;
+    console.log(`checking availability of generated id ${id}...`);
+  } while (idExists(id));
+  console.log(`id ${id} is available and can be assigned`);
+  return id;
+};
+
+app.use(bodyParser.json());
+
 app.get('/info', (req, res) => {
   const timestamp = new Date(Date.now()).toString();
   let message = `<p>Phonebook has info for ${persons.length} people.</p>`;
+
   message += `<p>${timestamp}</p>`;
   res.send(message);
 });
@@ -54,6 +82,18 @@ app.delete('/api/persons/:id', (req, res) => {
     return person.id !== id;
   });
   res.status(204).end();
+});
+
+app.post('/api/persons', (req, res) => {
+  const body = req.body;
+  const person = {
+    id: generateId(),
+    name: body.name,
+    phone: body.phone
+  }
+
+  persons = persons.concat(person);
+  res.json(person);
 });
 
 app.listen(port, () => {
