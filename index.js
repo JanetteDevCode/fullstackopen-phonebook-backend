@@ -1,9 +1,14 @@
-require('dotenv').config();
-
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const morgan = require('morgan');
+const dotenv = require('dotenv');
+
+if (dotenv.config().error) {
+  console.log('no .env file detected');
+}
+
 const port = process.env.PORT || 3001;
 
 let persons = [{
@@ -59,6 +64,8 @@ morgan.token('data', (req, res) => {
   return JSON.stringify(req.body);
 });
 
+app.use(cors());
+app.use(express.static('build'));
 app.use(bodyParser.json());
 app.use(morgan('tiny', {
   skip: (req, res) => {
