@@ -1,15 +1,15 @@
-const express = require('express');
-const app = express();
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const morgan = require('morgan');
 const dotenv = require('dotenv');
 
 if (dotenv.config().error) {
   console.log('no .env file detected');
 }
 
-const port = process.env.PORT || 3001;
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const morgan = require('morgan');
+const Person = require('./models/person');
 
 let persons = [{
     id: 1,
@@ -87,20 +87,27 @@ app.get('/info', (req, res) => {
 });
 
 app.get('/api/persons', (req, res) => {
-  res.json(persons);
+  Person.find({})
+    .then((persons) => {
+      res.json(persons.map((person) => {
+        return person.toJSON();
+      }));
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 });
 
 app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const person = persons.find((person) => {
-    return person.id === id;
-  });
+  const id = req.params.id;
 
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).end();
-  }
+  Person.findById(id)
+    .then((person) => {
+      res.json(person.toJSON());
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 });
 
 app.delete('/api/persons/:id', (req, res) => {
@@ -145,6 +152,8 @@ app.post('/api/persons', (req, res) => {
   persons = persons.concat(person);
   res.json(person);
 });
+
+const port = process.env.PORT || 3001;
 
 app.listen(port, () => {
   console.log(`Phonebook server running on port ${port}.`);
