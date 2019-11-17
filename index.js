@@ -137,20 +137,24 @@ app.post('/api/persons', (req, res) => {
       .json({error: 'name and number cannot be blank'});
   }
 
-  if (personExists(name)) {
-    return res
-      .status(400)
-      .json({error: 'name must be unique'})
-  }
+  // if (personExists(name)) {
+  //   return res
+  //     .status(400)
+  //     .json({error: 'name must be unique'})
+  // }
 
-  const person = {
-    id: generateId(),
-    name: name,
-    phone: phone
-  }
+  const person = new Person({
+    name: body.name,
+    phone: body.phone
+  });
 
-  persons = persons.concat(person);
-  res.json(person);
+  person.save()
+    .then((savedPerson) => {
+      res.json(savedPerson.toJSON());
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 });
 
 const port = process.env.PORT || 3001;
