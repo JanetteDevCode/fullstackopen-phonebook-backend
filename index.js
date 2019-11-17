@@ -41,12 +41,21 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :d
   }
 }));
 
-app.get('/info', (req, res) => {
+app.get('/info', (req, res, next) => {
   const timestamp = new Date(Date.now()).toString();
-  let message = `<p>Phonebook has info for ${persons.length} people.</p>`;
-
-  message += `<p>${timestamp}</p>`;
-  res.send(message);
+  let message = '';
+  Person.find({})
+    .then((persons) => {
+      console.log('get info result:', persons);
+      if (persons.length > 0) {
+        message = `<p>Phonebook has info for ${persons.length} people.</p>`;
+      } else {
+        message = '<p>Phonebook is empty.</p>';
+      }
+      message += `<p>${timestamp}</p>`;
+      res.send(message);
+    })
+    .catch((err) => next(err));
 });
 
 app.get('/api/persons', (req, res, next) => {
@@ -57,9 +66,7 @@ app.get('/api/persons', (req, res, next) => {
         return person.toJSON();
       }));
     })
-    .catch((err) => {
-      console.log(err);
-    });
+    .catch((err) => next(err));
 });
 
 app.get('/api/persons/:id', (req, res, next) => {
