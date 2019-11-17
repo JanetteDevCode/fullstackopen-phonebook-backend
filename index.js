@@ -60,6 +60,18 @@ const generateId = () => {
   return id;
 };
 
+const errorHandler = (err, req, res, next) => {
+  console.error('error:', err.message);
+
+  if (err.name === 'CastError' && err.kind === 'ObjectId') {
+    return res
+      .status(400)
+      .send({ error: 'malformatted id' });
+  }
+
+  next(err);
+};
+
 morgan.token('data', (req, res) => {
   return JSON.stringify(req.body);
 });
@@ -122,15 +134,7 @@ app.delete('/api/persons/:id', (req, res, next) => {
         res.status(404).end();
       }
     })
-    .catch((err) => {
-      console.error('error:', err.message);
-
-      if (err.name === 'CastError' && err.kind === 'ObjectId') {
-        return res
-          .status(400)
-          .send({ error: 'malformatted id' });
-      }
-    });
+    .catch(err => next(err));
 });
 
 app.post('/api/persons', (req, res) => {
@@ -170,6 +174,8 @@ app.post('/api/persons', (req, res) => {
       console.log(err);
     });
 });
+
+app.use(errorHandler);
 
 const port = process.env.PORT || 3001;
 
