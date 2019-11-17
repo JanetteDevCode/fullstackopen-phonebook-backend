@@ -11,55 +11,6 @@ const cors = require('cors');
 const morgan = require('morgan');
 const Person = require('./models/person');
 
-let persons = [{
-    id: 1,
-    name: 'Arto Hellas', 
-    phone: '040-123456' 
-  }, {
-    id: 2,
-    name: 'Ada Lovelace', 
-    phone: '39-44-5323523' 
-  }, { 
-    id: 3,
-    name: 'Dan Abramov', 
-    phone: '12-43-234345' 
-  }, {
-    id: 4,
-    name: 'Mary Poppendieck', 
-    phone: '39-23-6423122' 
-  }
-];
-
-const personExists = (name) => {
-  return persons.find((person) => {
-    return person.name.toLowerCase() === name.toLowerCase();
-  });
-};
-
-const idExists = (id) => {
-  const found = persons.find((person) => {
-    return person.id === id;
-  });
-
-  if (found) {
-    console.log(`id ${id} is already in use!`);
-  }
-  return found;
-};
-
-const generateId = () => {
-  const minId = 1;
-  const maxId = 10000;
-  let id = 0;
-
-  do {
-    id = Math.floor(Math.random() * (maxId - minId + 1)) + minId;
-    console.log(`checking availability of generated id ${id}...`);
-  } while (idExists(id));
-  console.log(`id ${id} is available and can be assigned`);
-  return id;
-};
-
 const errorHandler = (err, req, res, next) => {
   console.error('error:', err.message);
 
@@ -98,9 +49,10 @@ app.get('/info', (req, res) => {
   res.send(message);
 });
 
-app.get('/api/persons', (req, res) => {
+app.get('/api/persons', (req, res, next) => {
   Person.find({})
     .then((persons) => {
+      console.log('get persons result:', persons);
       res.json(persons.map((person) => {
         return person.toJSON();
       }));
@@ -110,26 +62,14 @@ app.get('/api/persons', (req, res) => {
     });
 });
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
   const id = req.params.id;
 
   Person.findById(id)
     .then((person) => {
-      res.json(person.toJSON());
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-});
-
-app.delete('/api/persons/:id', (req, res, next) => {
-  const id = req.params.id;
-
-  Person.findByIdAndRemove(id)
-    .then((result) => {
-      console.log('delete person result:', result);
-      if (result) {
-        res.status(204).end();
+      console.log('get person result:', person);
+      if (person) {
+        res.json(person.toJSON());
       } else {
         res.status(404).end();
       }
@@ -137,7 +77,7 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .catch(err => next(err));
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body;
   
   if (!body.name || !body.phone) {
@@ -155,24 +95,64 @@ app.post('/api/persons', (req, res) => {
       .json({error: 'name and number cannot be blank'});
   }
 
-  // if (personExists(name)) {
-  //   return res
-  //     .status(400)
-  //     .json({error: 'name must be unique'})
-  // }
+  Person.findOne({ name: name })
+    .then((person) => {
+      console.log('person exists:', person);
+      if (person) {
+        return res
+          .status(400)
+          .json({error: 'person already exists'});
+      } else {
+        const person = new Person({
+          name: body.name,
+          phone: body.phone
+        });
+      
+        person.save()
+          .then((savedPerson) => {
+            console.log('save person result:', savedPerson);
+            res.json(savedPerson.toJSON());
+          })
+          .catch(err => next(err));
+      }
+    })
+    .catch(err => next(err));
+});
 
-  const person = new Person({
+app.put('/api/persons/:id', (req, res, next) => {
+  const body = req.body;
+  const id = req.params.id;
+
+  const person = {
     name: body.name,
     phone: body.phone
-  });
+  };
 
-  person.save()
-    .then((savedPerson) => {
-      res.json(savedPerson.toJSON());
+  Person.findByIdAndUpdate(id, person, { new: true })
+    .then((updatedPerson) => {
+      console.log('update person result:', updatedPerson);
+      if (updatedPerson) {
+        res.json(updatedPerson.toJSON());
+      } else {
+        res.status(404).end();
+      }
     })
-    .catch((err) => {
-      console.log(err);
-    });
+    .catch(err => next(err));
+});
+
+app.delete('/api/persons/:id', (req, res, next) => {
+  const id = req.params.id;
+
+  Person.findByIdAndRemove(id)
+    .then((result) => {
+      console.log('delete person result:', result);
+      if (result) {
+        res.status(204).end();
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch(err => next(err));
 });
 
 app.use(errorHandler);
