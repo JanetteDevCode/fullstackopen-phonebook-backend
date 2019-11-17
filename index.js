@@ -110,13 +110,27 @@ app.get('/api/persons/:id', (req, res) => {
     });
 });
 
-app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
+app.delete('/api/persons/:id', (req, res, next) => {
+  const id = req.params.id;
 
-  persons = persons.filter((person) => {
-    return person.id !== id;
-  });
-  res.status(204).end();
+  Person.findByIdAndRemove(id)
+    .then((result) => {
+      console.log('delete person result:', result);
+      if (result) {
+        res.status(204).end();
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch((err) => {
+      console.error('error:', err.message);
+
+      if (err.name === 'CastError' && err.kind === 'ObjectId') {
+        return res
+          .status(400)
+          .send({ error: 'malformatted id' });
+      }
+    });
 });
 
 app.post('/api/persons', (req, res) => {
