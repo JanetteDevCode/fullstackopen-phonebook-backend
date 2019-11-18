@@ -19,10 +19,7 @@ const errorHandler = (err, req, res, next) => {
       .status(400)
       .json({ error: `${err.name}: malformatted id` });
   } else if (err.name === 'ValidationError') {
-    return res
-      .status(400)
-      .json({ error: `${err.name}: ${err.message}` });
-  } else {
+    console.log('validation error!');
     return res
       .status(400)
       .json({ error: `${err.name}: ${err.message}` });
@@ -31,6 +28,7 @@ const errorHandler = (err, req, res, next) => {
   next(err);
 };
 
+// eslint-disable-next-line no-unused-vars
 morgan.token('data', (req, res) => {
   return JSON.stringify(req.body);
 });
@@ -39,11 +37,13 @@ app.use(cors());
 app.use(express.static('build'));
 app.use(bodyParser.json());
 app.use(morgan('tiny', {
+  // eslint-disable-next-line no-unused-vars
   skip: (req, res) => {
     return req.method === 'POST';
   }
 }));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data', {
+  // eslint-disable-next-line no-unused-vars
   skip: (req, res) => {
     return req.method !== 'POST';
   }
@@ -94,11 +94,11 @@ app.get('/api/persons/:id', (req, res, next) => {
 
 app.post('/api/persons', (req, res, next) => {
   const body = req.body;
-  
+
   if (!body.name || !body.phone) {
     return res
       .status(400)
-      .json({error: 'name or number missing'});
+      .json({ error: 'name or number missing' });
   }
 
   const person = new Person({
@@ -121,7 +121,7 @@ app.put('/api/persons/:id', (req, res, next) => {
   if (!body.name || !body.phone) {
     return res
       .status(400)
-      .json({error: 'name or number missing'});
+      .json({ error: 'name or number missing' });
   }
 
   const person = {
@@ -130,9 +130,9 @@ app.put('/api/persons/:id', (req, res, next) => {
   };
 
   Person.findByIdAndUpdate(
-    id, 
+    id,
     person,
-    { new: true, runValidators: true, context: 'query'}
+    { new: true, runValidators: true, context: 'query' }
   )
     .then((updatedPerson) => {
       console.log('update person result:', updatedPerson);
