@@ -17,7 +17,15 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
     return res
       .status(400)
-      .send({ error: 'malformatted id' });
+      .json({ error: `${err.name}: malformatted id` });
+  } else if (err.name === 'ValidationError') {
+    return res
+      .status(400)
+      .json({ error: `${err.name}: ${err.message}` });
+  } else {
+    return res
+      .status(400)
+      .json({ error: `${err.name}: ${err.message}` });
   }
 
   next(err);
@@ -93,35 +101,15 @@ app.post('/api/persons', (req, res, next) => {
       .json({error: 'name or number missing'});
   }
 
-  const name = body.name.trim();
-  const phone = body.phone.trim();
+  const person = new Person({
+    name: body.name.trim(),
+    phone: body.phone.trim()
+  });
 
-  if (!name || !phone) {
-    return res
-      .status(400)
-      .json({error: 'name and number cannot be blank'});
-  }
-
-  Person.findOne({ name: name })
-    .then((person) => {
-      console.log('person exists:', person);
-      if (person) {
-        return res
-          .status(400)
-          .json({error: 'person already exists'});
-      } else {
-        const person = new Person({
-          name: body.name,
-          phone: body.phone
-        });
-      
-        person.save()
-          .then((savedPerson) => {
-            console.log('save person result:', savedPerson);
-            res.json(savedPerson.toJSON());
-          })
-          .catch(err => next(err));
-      }
+  person.save()
+    .then((savedPerson) => {
+      console.log('save person result:', savedPerson);
+      res.json(savedPerson.toJSON());
     })
     .catch(err => next(err));
 });
@@ -130,12 +118,22 @@ app.put('/api/persons/:id', (req, res, next) => {
   const body = req.body;
   const id = req.params.id;
 
+  if (!body.name || !body.phone) {
+    return res
+      .status(400)
+      .json({error: 'name or number missing'});
+  }
+
   const person = {
-    name: body.name,
-    phone: body.phone
+    name: body.name.trim(),
+    phone: body.phone.trim()
   };
 
-  Person.findByIdAndUpdate(id, person, { new: true })
+  Person.findByIdAndUpdate(
+    id, 
+    person,
+    { new: true, runValidators: true, context: 'query'}
+  )
     .then((updatedPerson) => {
       console.log('update person result:', updatedPerson);
       if (updatedPerson) {
